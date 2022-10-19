@@ -458,10 +458,6 @@ def start():
 
     dataThread.start()
 
-# def reset():
-#     # TODO
-#     pass
-
 if __name__ == "__main__":
     threadCreated = False
     debug = False
