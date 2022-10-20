@@ -1,0 +1,147 @@
+import random
+import time
+
+prev_alt = 0
+prev_temp = 25
+prev_lat = 0.0
+prev_long = 0.0
+prev_rot = (0.0, 0.0, 0.0)
+
+def genTime(i):
+    """
+    i is in seconds
+    """
+    hours = int(i/3600)
+    i -= hours*3600
+    minutes = int(i/60)
+    i -= minutes*60
+    return str(hours).zfill(2)+":"+str(minutes).zfill(2)+":"+str(round(i, 2)).zfill(4)
+
+def genSWState(i):
+    if i < 10:
+        return "LAUNCH READY"
+    elif i < 532:
+        return "ASCENDING"
+    elif i < 542:
+        return "RELEASING"
+    elif i < 750:
+        return "DESCENDING"
+    else:
+        return "LANDED"
+
+def genPLState(i):
+    if i < 557:
+        return 'N'
+    else:
+        return 'R'
+
+def genAlt(i):
+    global prev_alt
+    if i == 0:
+        return 0
+    elif i < 542:
+        d_alt = random.random()
+        new_alt = prev_alt+d_alt
+        prev_alt=new_alt
+        return new_alt
+    elif i < 750:
+        d_alt = -1*random.random()
+        new_alt = prev_alt+d_alt
+        if new_alt <= 0:
+            new_alt = 0.0
+        prev_alt=new_alt
+        return new_alt
+    else:
+        return prev_alt   
+
+def genTemp(i):
+    global prev_temp
+    if i == 0:
+        return 25
+    else:
+        d_temp = -.2*random.random()
+        new_temp = prev_temp+d_temp
+        prev_temp = new_temp
+        return new_temp
+
+def genVolt():
+    return 6.0 + 0.01*random.random()
+
+def genLoc(i):
+    global prev_lat
+    global prev_long
+    if i == 0:
+        return 0.0, 0.0
+    else:
+        d_lat = .1*random.random()-0.05
+        d_long = .1*random.random()-0.05
+        new_lat = prev_lat + d_lat
+        new_long = prev_long + d_long
+        prev_lat = new_lat
+        prev_long = new_long
+        return new_lat, new_long
+
+def genRot(i):
+    global prev_rot
+    if i == 0:
+        return 0.0, 0.0, 0.0
+    else:
+        d_r = random.random()-0.5
+        d_p = random.random()-0.5
+        d_y = random.random()-0.5
+        new_r = round(prev_rot[0]+d_r, 2)
+        new_p = round(prev_rot[1]+d_p, 2)
+        new_y = round(prev_rot[2]+d_y, 2)
+        prev_rot = (new_r, new_p, new_y)
+        return (new_r, new_p, new_y)
+
+def generateVals(testDuration):
+    for i in range(testDuration):
+        newLat, newLong = genLoc(i)
+        newR, newP, newY = genRot(i)
+        """
+        yield f'1004'+ #team_id
+                genTime(i)+ #mission time
+                str(i+1)+ #packet count
+                genSWState(i), #software state
+                genPLState(i), #payload state
+                genAlt(i), #altitude
+                genTemp(i), #temperature
+                genVolt(i), #voltage
+                newLat,
+                newLong,
+                newR,
+                newP,
+                newY
+        """
+        yield f'1004,{genTime(i/10)},{i+1},{genSWState(i)},{genPLState(i)},{genAlt(i)},{genTemp(i)},{round(genVolt(), 3)},{newLat},{newLong},{newR},{newP},{newY}'
+        time.sleep(0.01)
+
+# packet format
+# TEAM_ID, MISSION_TIME, PACKET_COUNT, SW_STATE, PL_STATE, ALTITUDE, TEMP,
+    # VOLTAGE, GPS_LATITUDE, GPS_LONGITUDE, GYRO_R, GYRO_P, GYRO_Y
+
+# example packet
+# 1001,00:01:53.23,100,ASCENT,N,103.2,31.11,3.3,34.7198,-86.6416,-0.1,-1.5,9.8
+
+"""
+TEAM_ID=1001
+MISSION_TIME=00:01:53.32
+PACKET_COUNT=100
+SW_STATE=ASCENT
+PL_STATE=N
+ALTITUDE=103.2
+TEMP=31.11
+VOLTAGE=3.3
+GPS_LATITUDE=34.7198
+GPS_LONGITUDE=-86.6416
+GYRO_R=-0.1
+GYRO_P=-1.5
+GYRO_Y=9.8
+"""
+
+if __name__ == "__main__":
+    n=10
+    gen = generateVals(n)
+    for i in range(n):
+        print(next(gen))
